@@ -89,12 +89,12 @@ def generate_pdf_report(
     content.append(
         Spacer(1, 20)
     )
-
+    
     overall_score = interview_feedback.get(
         "overall_score",
         0
     )
-
+    
     if overall_score >= 80:
 
         readiness = (
@@ -112,6 +112,64 @@ def generate_pdf_report(
         readiness = (
             "Needs Significant Improvement"
         )
+    
+    # =====================================
+    # EXECUTIVE SUMMARY
+    # =====================================
+
+    content.append(
+
+        Paragraph(
+
+            "Placement Readiness Summary",
+
+            styles["Heading1"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"Resume Score: {resume_score}/100",
+
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"ATS Score: {ats_score}/100",
+
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"Interview Score: {overall_score}/100",
+
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"Readiness Level: {readiness}",
+
+            styles["Heading2"]
+        )
+    )
+
+    content.append(
+        Spacer(1, 20)
+    )
 
     content.append(
 
@@ -197,8 +255,8 @@ def generate_pdf_report(
 
         Paragraph(
 
-            f"Education Found: "
-            f"{profile.get('education_found',False)}",
+           f"Education Section: "
+           f"{'Present' if profile.get('education_found') else 'Missing'}",
 
             styles["BodyText"]
         )
@@ -208,8 +266,19 @@ def generate_pdf_report(
 
         Paragraph(
 
-            f"Experience Found: "
-            f"{profile.get('experience_found',False)}",
+            f"Experience Section: "
+            f"{'Present' if profile.get('experience_found') else 'Missing'}",
+
+            styles["BodyText"]
+        )
+    )
+    
+    content.append(
+
+        Paragraph(
+
+            f"Certifications Section: "
+            f"{'Present' if profile.get('certifications_found') else 'Missing'}",
 
             styles["BodyText"]
         )
@@ -285,7 +354,7 @@ def generate_pdf_report(
 
             Paragraph(
 
-                f"Matched: {skill}",
+                f"✓ {skill}",
 
                 styles["BodyText"]
             )
@@ -300,7 +369,7 @@ def generate_pdf_report(
 
             Paragraph(
 
-                f"Missing: {skill}",
+                f"✗ {skill}",
 
                 styles["BodyText"]
             )
@@ -323,24 +392,46 @@ def generate_pdf_report(
             styles["Heading1"]
         )
     )
+    
+    sections_map = {
 
-    for section in [
+    "summary_improvements":
+        "Summary Improvements",
 
-        "summary_improvements",
+    "project_improvements":
+        "Project Improvements",
 
-        "project_improvements",
+    "experience_improvements":
+        "Experience Improvements",
 
-        "experience_improvements",
+    "skill_improvements":
+        "Skill Improvements",
 
-        "skill_improvements",
+    "ats_recommendations":
+        "ATS Recommendations"
+    }
 
-        "ats_recommendations"
-    ]:
+    for key, heading in sections_map.items():
 
-        for item in resume_improvements.get(
-            section,
+        items = resume_improvements.get(
+            key,
             []
-        ):
+        )
+
+        if not items:
+            continue
+
+        content.append(
+
+            Paragraph(
+
+                heading,
+
+                styles["Heading2"]
+            )
+        )
+
+        for item in items:
 
             content.append(
 
@@ -351,10 +442,10 @@ def generate_pdf_report(
                     styles["BodyText"]
                 )
             )
-        
+
         content.append(
-        Spacer(1, 20)
-    )
+            Spacer(1, 10)
+        )
 
     # =====================================
     # SCORES
@@ -642,6 +733,106 @@ def generate_pdf_report(
                 styles["BodyText"]
             )
         )
+    
+    content.append(
+        PageBreak()
+    )
+
+    content.append(
+
+        Paragraph(
+
+            "Final Assessment",
+
+            styles["Title"]
+        )
+    )
+
+    content.append(
+        Spacer(1, 20)
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"Resume Score: {resume_score}/100",
+
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"ATS Score: {ats_score}/100",
+
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"Interview Score: {overall_score}/100",
+
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            f"Readiness Level: {readiness}",
+
+            styles["Heading2"]
+        )
+    )
+
+    content.append(
+        Spacer(1, 20)
+    )
+
+    if overall_score >= 80:
+
+        recommendation = (
+            "Candidate is interview-ready and demonstrates strong technical understanding."
+        )
+
+    elif overall_score >= 60:
+
+        recommendation = (
+            "Candidate has a solid foundation but should improve technical depth and communication."
+        )
+
+    else:
+
+        recommendation = (
+            "Candidate should strengthen fundamentals and practice more interview questions."
+        )
+
+    content.append(
+
+        Paragraph(
+
+            "Final Recommendation",
+
+            styles["Heading1"]
+        )
+    )
+
+    content.append(
+
+        Paragraph(
+
+            recommendation,
+
+            styles["BodyText"]
+        )
+    )
 
     doc.build(
         content

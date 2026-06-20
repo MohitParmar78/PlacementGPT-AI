@@ -9,7 +9,6 @@ pymupdf
 groq
 sentence-transformers
 torch
-chromadb
 reportlab
 langchain
 langchain-core
