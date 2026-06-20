@@ -1,0 +1,434 @@
+# Streamlit
+import streamlit as st
+
+# Requests
+import requests
+
+# Title
+st.title("📄 Resume Analysis")
+
+st.write(
+    "Upload Resume for Parsing"
+)
+
+# File uploader
+uploaded_file = st.file_uploader(
+    "Choose Resume PDF",
+    type=["pdf"]
+)
+
+# Target role selection
+target_role = st.selectbox(
+
+    "Select Target Role",
+
+    [
+        "Machine Learning Engineer",
+        "Data Scientist",
+        "Backend Developer"
+    ]
+)
+
+difficulty = st.selectbox(
+
+    "Interview Difficulty",
+
+    [
+        "Easy",
+        "Medium",
+        "Hard"
+    ]
+)
+
+# Analyze button
+if st.button("Analyze Resume"):
+
+    if uploaded_file is not None:
+
+        api_url = (
+            "http://127.0.0.1:8000/analyze-resume"
+        )
+
+        files = {
+            "resume": (
+                uploaded_file.name,
+                uploaded_file,
+                "application/pdf"
+            )
+        }
+
+        # Form data
+        form_data = {
+
+            "target_role":
+            target_role,
+            
+            "difficulty":
+            difficulty
+        }
+
+        # Send request
+        response = requests.post(
+
+            api_url,
+
+            files=files,
+
+            data=form_data
+        )
+
+        if response.status_code == 200:
+
+            data = response.json()
+            
+            st.session_state[
+                "resume_analysis"
+            ] = data
+            
+            st.session_state["target_role"] = data["target_role"]
+
+            st.success(
+                "Resume Analyzed Successfully"
+            )
+            
+            st.subheader(
+                "📊 Resume Evaluation Dashboard"
+            )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.metric(
+                    "Resume Score",
+                    f"{data['resume_score']}/100"
+                )
+
+                st.progress(
+                data["resume_score"] / 100
+                )
+
+            with col2:
+
+                ats_score = data.get(
+                    "ats_score",
+                    0
+                )
+
+                st.metric(
+                    "ATS Score",
+                    f"{ats_score}/100"
+                )
+
+                st.progress(
+                    ats_score / 100
+                )
+            
+            st.subheader(
+                "Score Breakdown"
+            )
+
+            breakdown = (
+                data["score_breakdown"]
+            )
+
+            for key, value in breakdown.items():
+
+                st.write(
+                    f"{key.title()} : {value}"
+                )
+            
+            # -----------------------------
+            # Candidate Profile
+            # -----------------------------
+
+            profile = data["profile"]
+
+            st.subheader(
+                "👤 Candidate Profile"
+            )
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+
+                st.metric(
+                    "Skills",
+                    profile.get(
+                        "total_skills",
+                        0
+                    )
+                )
+
+            with col2:
+
+                st.metric(
+                    "Education",
+                    "Yes"
+                    if profile.get(
+                        "education_found",
+                        False
+                    )
+                    else "No"
+                )
+
+            with col3:
+
+                st.metric(
+                    "Experience",
+                    "Yes"
+                    if profile.get(
+                    "experience_found",
+                    False
+                    )
+                    else "No"
+                )
+
+            st.info(
+                f"Target Role: {data['target_role']}"
+            )
+            
+            # -----------------------------
+            # Skill Gap Analysis
+            # -----------------------------
+
+            st.subheader(
+                "🎯 Skill Gap Analysis"
+            )
+            
+            st.subheader(
+                "Detected Skills"
+            )
+
+            skills = (
+                data["profile"]["skills"]
+            )
+
+            if skills:
+
+                for skill in skills:
+
+                    st.success(skill)
+
+            else:
+
+                st.warning(
+                    "No skills detected"
+                )
+
+            skill_gap = data["skill_gap"]
+
+            st.write(
+                "### Missing Skills"
+            )
+
+            # Check if skills are missing
+            if skill_gap["missing_skills"]:
+
+                for skill in skill_gap["missing_skills"]:
+
+                    st.warning(skill)
+
+            else:
+
+                st.success(
+                    "No missing skills found!"
+                )
+            
+            with st.expander(
+                "View Required Skills"
+            ):
+
+                for skill in skill_gap[ "required_skills"]:
+
+                    st.write(
+                        f"✅ {skill}"
+                    )
+            
+            # -----------------------------
+            # ATS Analysis
+            # -----------------------------
+
+            ats_analysis = data.get(
+                "ats_analysis",
+                {}
+            )
+
+            st.subheader(
+                "📌 ATS Analysis"
+            )
+
+            st.write(
+                "### Matched Skills"
+            )
+
+            for skill in ats_analysis.get(
+                "matched_skills",
+                []
+            ):
+
+                st.success(skill)
+
+            st.write(
+                "### Matched Keywords"
+            )
+
+            for skill in ats_analysis.get(
+                "missing_skills",
+                []
+            ):
+
+                st.warning(skill)
+
+            st.write(
+                "### ATS Recommendations"
+            )
+
+            for recommendation in ats_analysis.get(
+                "recommendations",
+                []
+            ):
+
+                st.info(
+                    recommendation
+            )
+                
+            # -----------------------------
+            # Resume Improvement Suggestions
+            # -----------------------------
+
+            improvements = data.get(
+                "resume_improvements",
+                {}
+            )
+
+            st.subheader(
+                "🚀 Resume Improvement Suggestions"
+            )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.write(
+                    "### Summary Improvements"
+                )
+
+                for item in improvements.get(
+                    "summary_improvements",
+                    []
+                ):
+
+                    st.info(item)
+
+                st.write(
+                    "### Project Improvements"
+                )
+
+                for item in improvements.get(
+                    "project_improvements",
+                    []
+                ):
+
+                    st.warning(item)
+
+            with col2:
+
+                st.write(
+                    "### Experience Improvements"
+                )
+
+                for item in improvements.get(
+                    "experience_improvements",
+                    []
+                ):
+
+                    st.warning(item)
+
+                st.write(
+                    "### Skill Improvements"
+                )
+
+                for item in improvements.get(
+                    "skill_improvements",
+                    []
+                ):
+
+                    st.success(item)
+
+            st.write(
+                "### ATS Recommendations"
+            )
+
+            for item in improvements.get(
+                "ats_recommendations",
+                []
+            ):
+
+                st.error(item)
+            
+            # -----------------------------
+            # Generated Questions
+            # -----------------------------
+
+            questions = data["questions"]
+            
+            st.session_state[
+                "questions"
+            ] = questions
+            
+            st.subheader(
+                "Resume Statistics"
+            )
+
+            stats = data["stats"]
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+
+                st.metric(
+                    "Skills",
+                        stats["skills_count"]
+                )
+
+                st.metric(
+                    "Education",
+                    "Yes" if stats["education_found"] else "No"
+                )
+
+            with col2:
+
+                st.metric(
+                    "Experience",
+                    "Yes" if stats["experience_found"] else "No"
+                )
+
+                st.metric(
+                    "Certifications",
+                    "Yes" if stats["certifications_found"] else "No"
+                )
+            
+            st.subheader(
+                "Extracted Sections"
+            )
+
+            sections = data["sections"]
+
+            for section_name, content in sections.items():
+
+                with st.expander(
+                    section_name.title()
+                ):
+
+                    st.write(content)      
+
+            st.subheader(
+                "Extracted Resume Text"
+            )
+
+            st.text_area(
+                "Resume Content",
+                data["resume_text"],
+                height=350
+            )

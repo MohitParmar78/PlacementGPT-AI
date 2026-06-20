@@ -1,0 +1,31 @@
+{
+    "Machine Learning Engineer": [
+        "Python",
+        "Machine Learning",
+        "Deep Learning",
+        "PyTorch",
+        "TensorFlow",
+        "Docker",
+        "AWS",
+        "Git"
+    ],
+
+    "Data Scientist": [
+        "Python",
+        "Pandas",
+        "NumPy",
+        "SQL",
+        "Machine Learning",
+        "Statistics",
+        "Data Visualization"
+    ],
+
+    "Backend Developer": [
+        "Java",
+        "SQL",
+        "Spring Boot",
+        "Docker",
+        "Git",
+        "PostgreSQL"
+    ]
+}

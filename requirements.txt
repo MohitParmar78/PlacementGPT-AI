@@ -1,0 +1,16 @@
+streamlit
+fastapi
+uvicorn
+python-multipart
+requests
+pydantic
+python-dotenv
+pymupdf
+groq
+sentence-transformers
+torch
+chromadb
+reportlab
+langchain
+langchain-core
+langgraph

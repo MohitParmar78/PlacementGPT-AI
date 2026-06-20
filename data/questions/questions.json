@@ -1,0 +1,37 @@
+{
+    "Python": [
+        "What are Python decorators?",
+        "What is the difference between list and tuple?",
+        "Explain generators in Python."
+    ],
+
+    "Machine Learning": [
+        "Explain bias-variance tradeoff.",
+        "What is overfitting?",
+        "Difference between bagging and boosting?"
+    ],
+
+    "Deep Learning": [
+        "What is backpropagation?",
+        "Explain CNN architecture.",
+        "What is vanishing gradient problem?"
+    ],
+
+    "NLP": [
+        "What is tokenization?",
+        "Difference between BERT and GPT?",
+        "What are embeddings?"
+    ],
+
+    "SQL": [
+        "What is normalization?",
+        "Difference between WHERE and HAVING?",
+        "Explain indexing."
+    ],
+
+    "FastAPI": [
+        "What are FastAPI dependencies?",
+        "Why FastAPI is faster than Flask?",
+        "What is Pydantic?"
+    ]
+}

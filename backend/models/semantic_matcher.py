@@ -1,0 +1,206 @@
+# ==========================================
+# PlacementGPT-AI
+# Semantic Matcher
+# ==========================================
+
+from sklearn.metrics.pairwise import (
+    cosine_similarity
+)
+
+from backend.models.embedding_model import (
+    EmbeddingModel
+)
+
+
+class SemanticMatcher:
+    """
+    Semantic similarity matcher
+    using embeddings.
+    """
+
+    def __init__(self):
+
+        self.embedding_model = (
+            EmbeddingModel()
+        )
+
+    def exact_match(
+        self,
+        resume_skills,
+        target_skill
+    ):
+        """
+        Check exact skill match.
+        """
+
+        target_skill = (
+            target_skill
+            .lower()
+            .strip()
+        )
+
+        for skill in resume_skills:
+
+            if (
+                skill.lower().strip()
+                ==
+                target_skill
+            ):
+
+                return True
+
+        return False
+
+    def calculate_similarity(
+        self,
+        text1,
+        text2
+    ):
+        """
+        Calculate semantic similarity.
+        """
+
+        embedding1 = (
+            self.embedding_model
+            .encode_text(text1)
+        )
+
+        embedding2 = (
+            self.embedding_model
+            .encode_text(text2)
+        )
+
+        similarity = cosine_similarity(
+
+            [embedding1],
+
+            [embedding2]
+
+        )[0][0]
+
+        return float(
+            similarity
+        )
+
+    def match_skills(
+        self,
+        resume_skills,
+        target_skills,
+        threshold=0.75
+    ):
+        """
+        Match resume skills
+        with target skills.
+        """
+
+        matched = []
+
+        missing = []
+
+        for target_skill in target_skills:
+
+            # ---------------------
+            # Exact Match Check
+            # ---------------------
+
+            if self.exact_match(
+
+                resume_skills,
+
+                target_skill
+
+            ):
+
+                matched.append(
+
+                    {
+
+                        "target_skill":
+                            target_skill,
+
+                        "matched_skill":
+                            target_skill,
+
+                        "similarity":
+                            1.0
+                    }
+                )
+
+                continue
+
+            # ---------------------
+            # Semantic Match Check
+            # ---------------------
+
+            best_score = 0
+
+            best_match = None
+
+            for resume_skill in resume_skills:
+
+                score = (
+
+                    self.calculate_similarity(
+
+                        resume_skill,
+
+                        target_skill
+                    )
+                )
+
+                if score > best_score:
+
+                    best_score = score
+
+                    best_match = (
+                        resume_skill
+                    )
+
+            if best_score >= threshold:
+
+                matched.append(
+
+                    {
+
+                        "target_skill":
+                            target_skill,
+
+                        "matched_skill":
+                            best_match,
+
+                        "similarity":
+                            round(
+                                best_score,
+                                3
+                            )
+                    }
+                )
+
+            else:
+
+                missing.append(
+
+                    {
+
+                        "target_skill":
+                            target_skill,
+
+                        "best_match":
+                            best_match,
+
+                        "similarity":
+                            round(
+                                best_score,
+                                3
+                            )
+                    }
+                )
+
+        return {
+
+            "matched":
+                matched,
+
+            "missing":
+                missing
+        }
