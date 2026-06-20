@@ -19,13 +19,20 @@ uploaded_file = st.file_uploader(
 
 # Target role selection
 target_role = st.selectbox(
-
     "Select Target Role",
-
     [
-        "Machine Learning Engineer",
+        "Software Engineer",
+        "Backend Developer",
+        "Frontend Developer",
+        "Full Stack Developer",
+        "Data Analyst",
         "Data Scientist",
-        "Backend Developer"
+        "Machine Learning Engineer",
+        "Deep Learning Engineer",
+        "GenAI Engineer",
+        "AI Research Engineer",
+        "DevOps Engineer",
+        "Cloud Engineer"
     ]
 )
 

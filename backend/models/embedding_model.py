@@ -9,35 +9,36 @@ from sentence_transformers import (
 
 
 class EmbeddingModel:
-    """
-    Generate semantic embeddings
-    for resumes, skills, and job roles.
-    """
 
     def __init__(self):
 
-        self.model = SentenceTransformer(
-            "BAAI/bge-small-en-v1.5"
-        )
+        self.model = None
+
+    def get_model(self):
+
+        if self.model is None:
+
+            print(
+                "Loading embedding model..."
+            )
+
+            self.model = SentenceTransformer(
+                "all-MiniLM-L6-v2"
+            )
+
+        return self.model
 
     def encode_text(
         self,
         text
     ):
-        """
-        Convert text into embedding.
 
-        Parameters
-        ----------
-        text : str
+        model = self.get_model()
 
-        Returns
-        -------
-        list
-        """
+        embedding = model.encode(
 
-        embedding = self.model.encode(
             text,
+
             normalize_embeddings=True
         )
 
@@ -47,12 +48,10 @@ class EmbeddingModel:
         self,
         texts
     ):
-        """
-        Convert multiple texts
-        into embeddings.
-        """
 
-        embeddings = self.model.encode(
+        model = self.get_model()
+
+        embeddings = model.encode(
 
             texts,
 

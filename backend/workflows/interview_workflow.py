@@ -178,8 +178,6 @@ from backend.config.role_loader import (
     load_role_skills
 )
 
-agent = SkillGapAgent()
-
 
 def skill_gap_node(
     state
@@ -193,6 +191,8 @@ def skill_gap_node(
 
         []
     )
+
+    agent = SkillGapAgent()
 
     result = agent.analyze_skill_gap(
 
