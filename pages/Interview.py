@@ -99,7 +99,7 @@ for index, question_data in enumerate(
 
             response = requests.post(
 
-                "http://127.0.0.1:8000/generate-followup",
+                "https://placementgpt-ai-production.up.railway.app/generate-followup",
 
                 json={
 
@@ -187,7 +187,7 @@ if st.button(
         ):
 
             response = requests.post(
-                "http://127.0.0.1:8000/evaluate-interview",
+                "https://placementgpt-ai-production.up.railway.app/evaluate-interview",
                 json={
                     "target_role": role,
                     "interview": interview_data

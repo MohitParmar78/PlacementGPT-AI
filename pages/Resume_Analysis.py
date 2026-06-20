@@ -46,7 +46,7 @@ if st.button("Analyze Resume"):
     if uploaded_file is not None:
 
         api_url = (
-            "http://127.0.0.1:8000/analyze-resume"
+            "https://placementgpt-ai-production.up.railway.app/analyze-resume"
         )
 
         files = {
@@ -68,14 +68,16 @@ if st.button("Analyze Resume"):
         }
 
         # Send request
-        response = requests.post(
+        with st.spinner(
+            "Analyzing resume... This may take up to a minute on first startup."
+        ):
 
-            api_url,
-
-            files=files,
-
-            data=form_data
-        )
+            response = requests.post(
+                api_url,
+                files=files,
+                data=form_data,
+                timeout=300
+            )
 
         if response.status_code == 200:
 

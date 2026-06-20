@@ -209,11 +209,6 @@ Example:
         .content
     )
 
-    print("=" * 80)
-    print("RAW LLAMA RESPONSE")
-    print(result)
-    print("=" * 80)
-
     try:
 
         result = json.loads(
