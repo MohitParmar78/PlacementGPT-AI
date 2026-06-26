@@ -1,6 +1,6 @@
 # ==========================================
 # PlacementGPT-AI
-# Semantic Matcher
+# Semantic Matcher (Optimized)
 # ==========================================
 
 from sklearn.metrics.pairwise import (
@@ -51,37 +51,6 @@ class SemanticMatcher:
 
         return False
 
-    def calculate_similarity(
-        self,
-        text1,
-        text2
-    ):
-        """
-        Calculate semantic similarity.
-        """
-
-        embedding1 = (
-            self.embedding_model
-            .encode_text(text1)
-        )
-
-        embedding2 = (
-            self.embedding_model
-            .encode_text(text2)
-        )
-
-        similarity = cosine_similarity(
-
-            [embedding1],
-
-            [embedding2]
-
-        )[0][0]
-
-        return float(
-            similarity
-        )
-
     def match_skills(
         self,
         resume_skills,
@@ -97,11 +66,67 @@ class SemanticMatcher:
 
         missing = []
 
-        for target_skill in target_skills:
+        # ------------------------------------
+        # Handle Empty Lists
+        # ------------------------------------
 
-            # ---------------------
-            # Exact Match Check
-            # ---------------------
+        if not resume_skills or not target_skills:
+
+            return {
+
+                "matched": matched,
+
+                "missing": missing
+            }
+
+        # ------------------------------------
+        # Encode Resume Skills Once
+        # ------------------------------------
+
+        resume_embeddings = (
+            self.embedding_model
+            .encode_batch(
+                resume_skills
+            )
+        )
+
+        # ------------------------------------
+        # Encode Target Skills Once
+        # ------------------------------------
+
+        target_embeddings = (
+            self.embedding_model
+            .encode_batch(
+                target_skills
+            )
+        )
+
+        # ------------------------------------
+        # Similarity Matrix
+        #
+        # Rows    -> Target Skills
+        # Columns -> Resume Skills
+        # ------------------------------------
+
+        similarity_matrix = cosine_similarity(
+
+            target_embeddings,
+
+            resume_embeddings
+
+        )
+
+        # ------------------------------------
+        # Process Each Target Skill
+        # ------------------------------------
+
+        for i, target_skill in enumerate(
+            target_skills
+        ):
+
+            # -----------------------------
+            # Exact Match
+            # -----------------------------
 
             if self.exact_match(
 
@@ -128,33 +153,23 @@ class SemanticMatcher:
 
                 continue
 
-            # ---------------------
-            # Semantic Match Check
-            # ---------------------
+            # -----------------------------
+            # Best Semantic Match
+            # -----------------------------
 
-            best_score = 0
+            row = similarity_matrix[i]
 
-            best_match = None
+            best_index = row.argmax()
 
-            for resume_skill in resume_skills:
+            best_score = float(
+                row[best_index]
+            )
 
-                score = (
-
-                    self.calculate_similarity(
-
-                        resume_skill,
-
-                        target_skill
-                    )
-                )
-
-                if score > best_score:
-
-                    best_score = score
-
-                    best_match = (
-                        resume_skill
-                    )
+            best_match = (
+                resume_skills[
+                    best_index
+                ]
+            )
 
             if best_score >= threshold:
 

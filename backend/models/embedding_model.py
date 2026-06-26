@@ -1,32 +1,35 @@
 # ==========================================
 # PlacementGPT-AI
-# Embedding Model
+# Embedding Model (Singleton)
 # ==========================================
 
-from sentence_transformers import (
-    SentenceTransformer
-)
+from sentence_transformers import SentenceTransformer
 
 
 class EmbeddingModel:
 
-    def __init__(self):
+    _instance = None
+    _model = None
 
-        self.model = None
+    def __new__(cls):
+
+        if cls._instance is None:
+
+            cls._instance = super().__new__(cls)
+
+        return cls._instance
 
     def get_model(self):
 
-        if self.model is None:
+        if EmbeddingModel._model is None:
 
-            print(
-                "Loading embedding model..."
-            )
+            print("Loading embedding model...")
 
-            self.model = SentenceTransformer(
+            EmbeddingModel._model = SentenceTransformer(
                 "all-MiniLM-L6-v2"
             )
 
-        return self.model
+        return EmbeddingModel._model
 
     def encode_text(
         self,
@@ -35,14 +38,12 @@ class EmbeddingModel:
 
         model = self.get_model()
 
-        embedding = model.encode(
+        return model.encode(
 
             text,
 
             normalize_embeddings=True
         )
-
-        return embedding
 
     def encode_batch(
         self,
@@ -51,11 +52,9 @@ class EmbeddingModel:
 
         model = self.get_model()
 
-        embeddings = model.encode(
+        return model.encode(
 
             texts,
 
             normalize_embeddings=True
         )
-
-        return embeddings
