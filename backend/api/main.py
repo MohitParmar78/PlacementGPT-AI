@@ -13,32 +13,9 @@ from backend.services.resume_parser import (
 )
 from backend.agents.resume_agent import (
     clean_resume_text,
-    extract_sections,
-    create_candidate_profile
-)
-from backend.agents.skill_agent import (
-    extract_skills
-)
-from backend.agents.resume_agent import (
-    generate_resume_stats
-)
-from backend.agents.scoring_agent import (
-    calculate_resume_score
-)
-from backend.agents.skill_gap_agent import (
-    SkillGapAgent
-)
-from backend.agents.question_agent import (
-    generate_questions
 )
 from backend.agents.interview_agent import (
     evaluate_interview
-)
-from backend.config.role_loader import (
-    load_role_skills
-)
-from backend.agents.resume_improvement_agent import (
-    generate_resume_improvements
 )
 from backend.agents.followup_question_agent import (
     generate_followup_question
@@ -52,7 +29,7 @@ app = FastAPI(
     title="PlacementGPT-AI API"
 )
 
-skill_gap_agent = SkillGapAgent()
+
 
 class InterviewItem(
     BaseModel
@@ -191,10 +168,6 @@ def analyze_resume(
 def evaluate_interview_api(
     request: InterviewRequest
 ):
-    print("=" * 80)
-    print("REQUEST RECEIVED")
-    print(request)
-    print("=" * 80)
 
     interview_data = [
 
