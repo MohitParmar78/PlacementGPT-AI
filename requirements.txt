@@ -13,3 +13,4 @@ reportlab
 langchain
 langchain-core
 langgraph
+sqlalchemy
