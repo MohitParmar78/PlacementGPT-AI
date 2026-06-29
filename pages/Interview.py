@@ -5,6 +5,10 @@
 
 import requests
 import streamlit as st
+import os
+import streamlit.components.v1 as components
+
+API_BASE_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # ------------------------------------------
 # Page Configuration
@@ -55,6 +59,51 @@ st.subheader(
     "Generated Interview Questions"
 )
 
+def render_timer(minutes: int):
+    components.html(
+        f"""
+        <div id="timer" style="font-family: sans-serif; font-size: 24px; font-weight: bold; color: #2e7d32; text-align: center; padding: 10px; border: 2px solid #2e7d32; border-radius: 10px; background-color: #e8f5e9;">
+            Time Remaining: {minutes}:00
+        </div>
+        <script>
+            let timeLeft = {minutes * 60};
+            let timerEl = document.getElementById('timer');
+            
+            let countdown = setInterval(function() {{
+                timeLeft -= 1;
+                let m = Math.floor(timeLeft / 60);
+                let s = timeLeft % 60;
+                
+                if(s < 10) s = '0' + s;
+                
+                timerEl.innerHTML = "Time Remaining: " + m + ":" + s;
+                
+                if (timeLeft <= 60 && timeLeft > 0) {{
+                    timerEl.style.color = '#ef6c00';
+                    timerEl.style.borderColor = '#ef6c00';
+                    timerEl.style.backgroundColor = '#fff3e0';
+                }}
+                
+                if (timeLeft <= 0) {{
+                    clearInterval(countdown);
+                    timerEl.innerHTML = "TIME IS UP! PLEASE WRAP UP YOUR ANSWER.";
+                    timerEl.style.color = '#c62828';
+                    timerEl.style.borderColor = '#c62828';
+                    timerEl.style.backgroundColor = '#ffebee';
+                    // Optional: play an alert sound
+                    let audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+                    audio.play().catch(e => console.log(e));
+                }}
+            }}, 1000);
+        </script>
+        """,
+        height=80
+    )
+
+st.write("### ⏱️ Interview Timer")
+render_timer(5) # Set 5 minutes for the overall interview or per question? We'll set 15 minutes overall for realism.
+
+
 for index, question_data in enumerate(
     questions,
     start=1
@@ -99,7 +148,7 @@ for index, question_data in enumerate(
 
             response = requests.post(
 
-                "https://placementgpt-ai-production.up.railway.app/generate-followup",
+                f"{API_BASE_URL}/generate-followup",
 
                 json={
 
@@ -141,6 +190,9 @@ for index, question_data in enumerate(
 # ------------------------------------------
 # Evaluate Interview
 # ------------------------------------------
+
+st.markdown("---")
+st.warning("⏱️ When you are finished or time is up, click below to evaluate your responses.")
 
 if st.button(
     "Evaluate Interview",
@@ -187,7 +239,7 @@ if st.button(
         ):
 
             response = requests.post(
-                "https://placementgpt-ai-production.up.railway.app/evaluate-interview",
+                f"{API_BASE_URL}/evaluate-interview",
                 json={
                     "target_role": role,
                     "interview": interview_data

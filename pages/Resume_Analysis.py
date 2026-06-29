@@ -3,6 +3,26 @@ import streamlit as st
 
 # Requests
 import requests
+import os
+import streamlit.components.v1 as components
+
+# API Config
+API_BASE_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+def render_mermaid(code: str):
+    components.html(
+        f"""
+        <div class="mermaid" style="display: flex; justify-content: center; background-color: white; padding: 20px; border-radius: 10px;">
+            {code}
+        </div>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true, theme: 'default' }});
+        </script>
+        """,
+        height=600, scrolling=True
+    )
+
 
 # Title
 st.title("📄 Resume Analysis")
@@ -52,9 +72,7 @@ if st.button("Analyze Resume"):
 
     if uploaded_file is not None:
 
-        api_url = (
-            "https://placementgpt-ai-production.up.railway.app/analyze-resume"
-        )
+        api_url = f"{API_BASE_URL}/analyze-resume"
 
         files = {
             "resume": (
@@ -100,6 +118,18 @@ if st.button("Analyze Resume"):
                 "Resume Analyzed Successfully"
             )
             
+            st.subheader(
+                "🧠 Multi-Agent Workflow Execution"
+            )
+            st.info("Visualizing the LangGraph AI Agents Orchestration Process:")
+            
+            try:
+                from backend.workflows.interview_workflow import graph
+                mermaid_code = graph.get_graph().draw_mermaid()
+                render_mermaid(mermaid_code)
+            except Exception as e:
+                st.warning(f"Could not render workflow diagram: {e}")
+
             st.subheader(
                 "📊 Resume Evaluation Dashboard"
             )

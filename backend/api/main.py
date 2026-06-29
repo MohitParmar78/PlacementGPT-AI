@@ -6,6 +6,11 @@ from fastapi import Form
 from pydantic import BaseModel
 from typing import List
 
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from backend.database.db import engine, Base, get_db
+from backend.services.memory_service import save_interview_session, get_interview_history
+
 # Import save service
 from backend.services.file_service import save_uploaded_file
 from backend.services.resume_parser import (
@@ -51,6 +56,9 @@ from backend.workflows.interview_workflow import (
 app = FastAPI(
     title="PlacementGPT-AI API"
 )
+
+# Initialize database tables
+Base.metadata.create_all(bind=engine)
 
 skill_gap_agent = SkillGapAgent()
 
@@ -131,6 +139,9 @@ def analyze_resume(
 
             "target_role":
                 target_role,
+                
+            "difficulty":
+                difficulty,
 
             "file_name":
                 resume.filename
@@ -189,7 +200,8 @@ def analyze_resume(
 
 @app.post("/evaluate-interview")
 def evaluate_interview_api(
-    request: InterviewRequest
+    request: InterviewRequest,
+    db: Session = Depends(get_db)
 ):
     print("=" * 80)
     print("REQUEST RECEIVED")
@@ -209,6 +221,9 @@ def evaluate_interview_api(
 
         interview_data
     )
+
+    # Save session to persistent memory
+    save_interview_session(db, request.target_role, feedback)
 
     return feedback
 
@@ -233,3 +248,11 @@ def generate_followup_api(
         target_role=
             request.target_role
     )
+
+@app.get("/history")
+def get_history_api(
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """Fetch past interview sessions from the database."""
+    return get_interview_history(db, limit)
