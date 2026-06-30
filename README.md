@@ -48,6 +48,8 @@
 | 🆕 | **Persistent Interview History** | All interview sessions are saved to a serverless **Neon PostgreSQL** database — revisit scores, questions, and feedback anytime |
 | 🆕 | **Resume Comparator** | Upload two versions of your resume and get a side-by-side AI analysis highlighting improvements, regressions, and ATS score delta |
 | ⚡ | **Cloud-native Storage** | Zero-config Neon DB integration — no self-hosted Postgres needed |
+| ⚡ | **Parallel Agent Execution** | Profile, Stats, ATS, and Skill Gap agents now run concurrently via LangGraph fan-out — cutting pipeline latency by up to 4× |
+| 🛡️ | **Resume Validity Gate** | A verification node short-circuits the pipeline on unreadable uploads, returning safe defaults instantly instead of propagating errors |
 
 ---
 
@@ -274,59 +276,122 @@ Resume V2 (PDF)  ──┘
 
 ## 🔄 LangGraph Multi-Agent Workflow
 
-PlacementGPT-AI uses a directed LangGraph state machine to coordinate specialised AI agents. Each agent handles one concern and passes enriched state to the next.
+PlacementGPT-AI uses a directed LangGraph `StateGraph` with a shared `PlacementState` TypedDict. The pipeline is split into three stages: a **sequential parse stage**, a **parallel analysis stage**, and a **sequential generation stage**. A validity gate after parsing short-circuits bad uploads before any expensive LLM work begins.
+
+### Full Workflow Diagram
 
 ```
-                    ┌──────────────┐
-                    │  Resume Text  │
-                    └──────┬───────┘
-                           │
-                    ┌──────▼───────┐
-                    │ Section Agent │  ← extracts structured sections
-                    └──────┬───────┘
-                           │
-                    ┌──────▼───────┐
-                    │  Skill Agent  │  ← identifies skills
-                    └──────┬───────┘
-                           │
-                    ┌──────▼───────┐
-                    │ Profile Agent │  ← builds candidate profile
-                    └──────┬───────┘
-                           │
-                    ┌──────▼───────┐
-                    │   ATS Agent   │  ← scores & compares to JD
-                    └──────┬───────┘
-                           │
-                    ┌──────▼────────┐
-                    │ Skill Gap Agent│  ← finds missing skills
-                    └──────┬────────┘
-                           │
-               ┌───────────▼────────────┐
-               │ Resume Improvement Agent│  ← rewrites & enhances
-               └───────────┬────────────┘
-                           │
-               ┌───────────▼────────────┐
-               │  Question Gen Agent    │  ← personalised questions
-               └───────────┬────────────┘
-                           │
-               ┌───────────▼────────────┐
-               │  Evaluation Agent      │  ← scores answers
-               └───────────┬────────────┘
-                           │
-               ┌───────────▼────────────┐
-               │  Roadmap Agent         │  ← learning plan
-               └───────────┬────────────┘
-                           │
-               ┌───────────▼────────────┐
-               │  Neon DB Persist       │  ← saves full session
-               └────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                       STAGE 1 — PARSE                          │
+│                                                                 │
+│   Resume Text ──► [ Section Agent ] ──► [ Skill Agent ]         │
+│                                               │                 │
+└───────────────────────────────────────────────┼─────────────────┘
+                                                │
+                                    ┌───────────▼────────────┐
+                                    │   Verification Node    │
+                                    │  checks sections +     │
+                                    │  skills are non-empty  │
+                                    └───────────┬────────────┘
+                                                │
+                            ┌───────────────────┴──────────────────┐
+                            │ conditional_edges (check_validity)    │
+                            │                                       │
+                      "valid"▼                               "invalid"▼
+              ┌─────────────────────┐                 ┌──────────────────────┐
+              │   Dispatch Node     │                 │    Fallback Node      │
+              │  (fan-out trigger)  │                 │  safe zero-defaults  │
+              └──┬──────┬──────┬───┘                 └──────────┬───────────┘
+                 │      │      │      │                          │
+┌────────────────▼──────▼──────▼──────▼──────────────┐         │
+│              STAGE 2 — PARALLEL ANALYSIS            │         │
+│                                                     │         │
+│  ┌──────────────┐  ┌──────────┐  ┌──────────────┐  │         │
+│  │ Profile Agent│  │Stats Node│  │  ATS Agent   │  │         │
+│  │ (profile)    │  │ (stats)  │  │ (ats_score,  │  │         │
+│  │              │  │          │  │  resume_score│  │         │
+│  │              │  │          │  │  breakdown,  │  │         │
+│  │              │  │          │  │  ats_analysis│  │         │
+│  └──────┬───────┘  └────┬─────┘  └──────┬───────┘  │         │
+│         │               │               │           │         │
+│  ┌──────▼───────────────▼───────────────▼────────┐  │         │
+│  │              Skill Gap Agent                  │  │         │
+│  │            (skill_gap result)                 │  │         │
+│  └──────────────────────┬────────────────────────┘  │         │
+│                         │  all four write back       │         │
+│                         │  to shared PlacementState  │         │
+└─────────────────────────┼───────────────────────────┘         │
+                          │                                      │
+              ┌───────────▼───────────┐                         │
+              │    Aggregator Node    │◄────────────────────────┘
+              │  (fan-in sync point)  │
+              └───────────┬───────────┘
+                          │
+┌─────────────────────────▼────────────────────────────────────┐
+│                    STAGE 3 — GENERATE                        │
+│                                                              │
+│  [ Improvement Agent ] ──► [ Question Agent ] ──► [ END ]   │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+### Node Reference
+
+| Node | Type | Responsibility |
+|------|------|----------------|
+| `sections` | Sequential | Parses resume text into structured sections (education, skills, experience, projects, certifications) |
+| `skills` | Sequential | Extracts a deduplicated skill list from the skills section |
+| `verification` | Sequential | Validates that at least one meaningful field was extracted |
+| `dispatch` | Fan-out | Dummy node that triggers all four parallel branches simultaneously |
+| `fallback` | Terminal | Returns zero-value defaults when the resume is unreadable — pipeline exits safely |
+| `profile` | **Parallel** | Builds a structured candidate profile from sections + skills |
+| `stats` | **Parallel** | Generates resume statistics (skill count, section presence flags) |
+| `ats` | **Parallel** | Calculates ATS score, resume score, score breakdown, and ATS recommendations against the target role |
+| `skill_gap` | **Parallel** | Loads role skill matrix, compares to resume skills, returns missing + required skills |
+| `aggregator` | Fan-in | Dummy sync node — waits for all four parallel branches to write state before continuing |
+| `improvements` | Sequential | Generates LLM-powered resume improvement suggestions per section |
+| `questions` | Sequential | Generates personalised interview questions by difficulty level |
+
+### State Schema
+
+All nodes read from and write back to a single shared `PlacementState` TypedDict:
+
+```python
+class PlacementState(TypedDict, total=False):
+    # Inputs
+    resume_text: str
+    target_role: str
+    difficulty: str          # "Easy" | "Medium" | "Hard"
+
+    # Parse stage outputs
+    sections: dict           # {education, skills, experience, projects, certifications}
+    skills: list             # deduplicated skill tokens
+    is_valid: bool           # set by verification node
+
+    # Parallel stage outputs
+    profile: dict
+    stats: dict
+    resume_score: int
+    ats_score: int
+    score_breakdown: dict
+    ats_analysis: dict
+    skill_gap: dict
+
+    # Generation stage outputs
+    resume_improvements: dict
+    questions: list
+```
+
+### Why the parallel stage matters
+
+Before this redesign, Profile → Stats → ATS → Skill Gap ran sequentially, making 4 back-to-back LLM/compute calls. Now LangGraph fans out from the `dispatch` node and all four agents execute concurrently, writing their results into the shared state independently. The `aggregator` fan-in ensures downstream nodes only proceed once every branch has completed.
 
 **Why LangGraph?**
-- Clean, auditable state transitions between agents
-- Easy to add new agents without touching existing ones
-- Built-in conditional branching (e.g., skip roadmap if score > 90)
-- First-class support for async, streaming, and retry logic
+- Explicit, auditable state transitions — every field change is traceable
+- Native fan-out / fan-in edges for true parallel execution
+- Conditional routing without ad-hoc if/else spaghetti
+- Shared `TypedDict` state prevents agents from stepping on each other
+- Fallback path keeps the app responsive on bad input
 
 ---
 
@@ -478,8 +543,10 @@ App available at: `http://localhost:8501`
 - [x] PDF report generation
 - [x] **Persistent interview history (Neon DB)**
 - [x] **Resume comparator**
+- [x] **Parallel agent execution (LangGraph fan-out/fan-in)**
+- [x] **Resume validity gate with safe fallback**
 - [ ] Analytics dashboard — visualise progress over time
-- [ ] Voice-based mock interview
+- [ ] Voice-based mock interviews
 
 ---
 
