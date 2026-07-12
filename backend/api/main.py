@@ -51,6 +51,9 @@ from backend.agents.followup_question_agent import (
 from backend.workflows.interview_workflow import (
     graph
 )
+from backend.agents.compare_agent import (
+    generate_resume_comparison
+)
 
 # Create app
 app = FastAPI(
@@ -197,6 +200,20 @@ def analyze_resume(
         cleaned_text
 }
     
+
+class CompareRequest(BaseModel):
+    target_role: str
+    resume_a_data: dict
+    resume_b_data: dict
+
+@app.post("/compare-resumes-llm")
+def compare_resumes_llm_api(request: CompareRequest):
+    comparison = generate_resume_comparison(
+        target_role=request.target_role,
+        resume_a_data=request.resume_a_data,
+        resume_b_data=request.resume_b_data
+    )
+    return comparison
 
 @app.post("/evaluate-interview")
 def evaluate_interview_api(

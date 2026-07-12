@@ -97,6 +97,47 @@ if st.button("Compare Resumes", use_container_width=True):
                         for s in res_b.get('skill_gap', {}).get('missing_skills', []):
                             st.error(s)
                             
+                    st.divider()
+                    st.subheader("🤖 AI Verdict & Comparison")
+                    with st.spinner("Generating AI comparison summary..."):
+                        try:
+                            comp_data = {
+                                "target_role": target_role,
+                                "resume_a_data": res_a,
+                                "resume_b_data": res_b
+                            }
+                            comp_resp = requests.post(f"{API_BASE_URL}/compare-resumes-llm", json=comp_data, timeout=120)
+                            if comp_resp.status_code == 200:
+                                llm_comp = comp_resp.json()
+                                verdict = llm_comp.get("verdict", "Unknown")
+                                
+                                if "Tie" in verdict or "Both" in verdict:
+                                    st.info(f"**Verdict:** {verdict}")
+                                elif "Resume A" in verdict:
+                                    st.success(f"**Verdict:** {verdict}")
+                                else:
+                                    st.success(f"**Verdict:** {verdict}")
+                                    
+                                st.write("### Comparison Summary")
+                                st.write(llm_comp.get("comparison_summary", ""))
+                                
+                                st.write("### Actionable Advice")
+                                st.info(llm_comp.get("actionable_advice", ""))
+                                
+                                cc1, cc2 = st.columns(2)
+                                with cc1:
+                                    st.write("**Resume A Strengths:**")
+                                    for s in llm_comp.get("resume_a_strengths", []):
+                                        st.write(f"- {s}")
+                                with cc2:
+                                    st.write("**Resume B Strengths:**")
+                                    for s in llm_comp.get("resume_b_strengths", []):
+                                        st.write(f"- {s}")
+                            else:
+                                st.warning("Could not generate AI comparison.")
+                        except Exception as e:
+                            st.warning(f"Failed to reach comparison endpoint: {e}")
+
                 else:
                     st.error(f"Error analyzing resumes. A: {resp_a.status_code}, B: {resp_b.status_code}")
             except Exception as e:

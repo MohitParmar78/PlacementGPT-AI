@@ -3,9 +3,51 @@ PlacementGPT-AI
 Advanced Resume Scoring Agent
 """
 
-from backend.config.role_loader import (
-    load_role_skills
-)
+import json
+from groq import Groq
+from backend.config.settings import GROQ_API_KEY
+from backend.models.semantic_matcher import SemanticMatcher
+from backend.config.role_loader import load_role_skills
+
+client = Groq(api_key=GROQ_API_KEY)
+
+def _get_llm_ats_score(sections, skills, target_role, required_skills, semantic_matches, semantic_missing):
+    prompt = f"""
+You are an expert ATS (Applicant Tracking System) and technical recruiter.
+Evaluate the candidate's resume for the role of: {target_role}.
+
+Required Skills for the role: {json.dumps(required_skills)}
+Candidate's detected skills: {json.dumps(skills)}
+Candidate's experience/projects sections context: {json.dumps({k: v[:500] for k, v in sections.items() if k in ['experience', 'projects']})}
+
+We have already performed a semantic analysis of the skills.
+Semantically Matched Skills: {json.dumps(semantic_matches)}
+Semantically Missing Skills: {json.dumps(semantic_missing)}
+
+Evaluate how well the candidate matches the role based on this semantic analysis and their contextual experience.
+Provide an ATS Score from 0 to 100. (Base it heavily on the semantic matches, but adjust based on experience context).
+Also provide refined lists of matched skills, missing skills, and recommendations.
+
+Return ONLY valid JSON in this exact format:
+{{
+    "ats_score": 85,
+    "matched_skills": ["skill1", "skill2"],
+    "missing_skills": ["skill3"],
+    "recommendations": ["Recommendation 1", "Recommendation 2"]
+}}
+"""
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            response_format={"type": "json_object"}
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"LLM ATS Scoring failed: {e}")
+        return None
+
 
 
 def calculate_resume_score(
@@ -131,31 +173,14 @@ def calculate_resume_score(
     )
 
     # ==================================
-    # ATS SCORE
+    # ATS SCORE (Hybrid: Semantic + LLM)
     # ==================================
-
-    matched_skills = []
-
-    missing_skills = []
-
-    for skill in required_skills:
-
-        if skill.lower() in [
-
-            s.lower()
-
-            for s in skills
-        ]:
-
-            matched_skills.append(
-                skill
-            )
-
-        else:
-
-            missing_skills.append(
-                skill
-            )
+    
+    matcher = SemanticMatcher()
+    semantic_result = matcher.match_skills(skills, required_skills)
+    
+    matched_skills = [item["target_skill"] for item in semantic_result.get("matched", [])]
+    missing_skills = [item["target_skill"] for item in semantic_result.get("missing", [])]
 
     if len(required_skills) > 0:
 
@@ -217,6 +242,18 @@ def calculate_resume_score(
 
             "Add internship or practical experience."
         )
+
+    # Use LLM for refined ATS scoring and recommendations
+    llm_result = _get_llm_ats_score(sections, skills, target_role, required_skills, matched_skills, missing_skills)
+    if llm_result is not None:
+        ats_score = llm_result.get("ats_score", ats_score)
+        matched_skills = llm_result.get("matched_skills", matched_skills)
+        missing_skills = llm_result.get("missing_skills", missing_skills)
+        recommendations = llm_result.get("recommendations", recommendations)
+        if len(required_skills) > 0:
+            keyword_match_percent = (len(matched_skills) / len(required_skills)) * 100
+        else:
+            keyword_match_percent = 0
 
     ats_analysis = {
 

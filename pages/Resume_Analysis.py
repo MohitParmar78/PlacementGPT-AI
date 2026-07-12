@@ -396,7 +396,7 @@ if st.button("Analyze Resume"):
                     st.success(item)
 
             st.write(
-                "### ATS Recommendations"
+                "### Additional ATS Suggestions"
             )
 
             for item in improvements.get(
