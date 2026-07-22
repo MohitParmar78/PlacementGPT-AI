@@ -13,3 +13,5 @@ reportlab
 langchain
 langchain-core
 langgraph
+sqlalchemy
+psycopg2-binary
