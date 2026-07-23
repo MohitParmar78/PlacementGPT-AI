@@ -1,397 +1,227 @@
 <div align="center">
 
-<h1>⚡ PlacementGPT-AI</h1>
+# ⚡ PlacementGPT-AI
 
-<p><strong>An end-to-end, AI-powered career preparation platform</strong><br/>
-<em>LangGraph · Groq · FastAPI · Streamlit · Neon DB</em></p>
+**An AI-powered, multi-agent career preparation platform**
+
+*Resume Intelligence · Semantic Skill Matching · AI Mock Interviews · LLM-Graded Feedback*
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.x-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-MultiAgent-F7931E?style=for-the-badge&logo=langchain&logoColor=white)](https://www.langchain.com/langgraph)
-[![Groq](https://img.shields.io/badge/Groq-Llama%203.3%2070B-6C1FFF?style=for-the-badge&logo=groq&logoColor=white)](https://groq.com/)
-[![Neon](https://img.shields.io/badge/Neon-PostgreSQL-00E5C9?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-
-<br/>
-
-> 🚀 **Upload your resume. Pick a role. Let AI do the rest.**
-> PlacementGPT-AI analyses your resume, detects skill gaps, coaches you through mock interviews, compares multiple resume versions, and stores your full interview history in a persistent cloud database — all in one sleek Streamlit app.
-
-<br/>
-
----
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Frontend-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Orchestration-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://www.langchain.com/langgraph)
+[![Groq](https://img.shields.io/badge/Groq-Llama%203.3%2070B-F55036?style=for-the-badge&logo=groq&logoColor=white)](https://groq.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
 </div>
 
+<br/>
+
+> **Upload a resume. Pick a role. Get analyzed, quizzed, graded, and reported — end to end.**
+> PlacementGPT-AI parses a resume, scores it against a live ATS model, finds the exact skill gaps for a target role, runs a personalised AI mock interview with follow-up questions, grades the answers like a strict FAANG interviewer, and exports everything as a PDF — with full history saved for next time.
+
+<br/>
+
+### Quick start
+
+```bash
+git clone https://github.com/MohitParmar78/PlacementGPT-AI.git
+cd PlacementGPT-AI
+python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env   # then add your GROQ_API_KEY
+
+# Terminal 1 — backend
+uvicorn backend.api.main:app --reload
+
+# Terminal 2 — frontend
+streamlit run app.py
+```
+
+---
+
 ## 📌 Table of Contents
 
-- [✨ What's New](#-whats-new)
-- [🎯 Core Features](#-core-features)
-- [🗄️ Persistent Storage — Neon DB](#️-persistent-storage--neon-db)
-- [📊 Resume Comparator](#-resume-comparator)
-- [🏗️ System Architecture](#️-system-architecture)
-- [🔄 LangGraph Multi-Agent Workflow](#-langgraph-multi-agent-workflow)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [📂 Project Structure](#-project-structure)
-- [🚀 Getting Started](#-getting-started)
-- [🔑 Environment Variables](#-environment-variables)
-- [▶️ Running the App](#️-running-the-app)
-- [👨‍💻 Author](#-author)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Architecture & LangGraph Workflow](#️-architecture--langgraph-workflow)
+- [Tech Stack](#️-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Running the Application](#️-running-the-application)
+- [API Reference](#-api-reference)
+- [Supported Roles](#-supported-roles)
+- [Data Assets](#-data-assets)
+- [Docker Deployment](#-docker-deployment)
+- [Testing](#-testing)
+- [Roadmap](#️-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Author](#-author)
 
 ---
 
-## ✨ What's New
+## 🧭 Overview
 
-| # | Feature | Description |
-|---|---------|-------------|
-| 🆕 | **Persistent Interview History** | All interview sessions are saved to a serverless **Neon PostgreSQL** database — revisit scores, questions, and feedback anytime |
-| 🆕 | **Resume Comparator** | Upload two versions of your resume and get a side-by-side AI analysis highlighting improvements, regressions, and ATS score delta |
-| ⚡ | **Cloud-native Storage** | Zero-config Neon DB integration — no self-hosted Postgres needed |
-| ⚡ | **Parallel Agent Execution** | Profile, Stats, ATS, and Skill Gap agents now run concurrently via LangGraph fan-out — cutting pipeline latency by up to 4× |
-| 🛡️ | **Resume Validity Gate** | A verification node short-circuits the pipeline on unreadable uploads, returning safe defaults instantly instead of propagating errors |
+PlacementGPT-AI takes a candidate from *"here's my resume"* to *"here's your interview-readiness report"* in one pipeline. A resume is parsed and scored, benchmarked against the real skill requirements of a target role, turned into a personalised mock interview, graded answer-by-answer by an LLM acting as a strict technical interviewer, and finally exported as a downloadable PDF — with every session persisted for later review.
+
+Under the hood, resume analysis runs as a single **LangGraph** state machine that blends rule-based scoring, sentence-embedding similarity, and Groq-hosted **Llama 3.3 70B** calls — with four analysis agents (profile, stats, ATS, skill-gap) fanned out to run **in parallel** to keep latency down.
+
+The app is split into two independently deployable services: a **Streamlit** multipage frontend and a **FastAPI** backend, connected over plain HTTP.
 
 ---
 
-## 🎯 Core Features
+## 🎯 Features
 
-<details>
+<details open>
 <summary><strong>📄 Resume Analysis</strong></summary>
 
-Upload any PDF resume and PlacementGPT-AI immediately extracts and structures every section:
+Upload a PDF resume and the pipeline extracts and structures it end to end:
 
-- **Automatic parsing** — education, skills, projects, experience, certifications
-- **Candidate profile generation** — synthesises a structured profile from raw text
-- **Resume statistics** — keyword density, section completeness score, readability metrics
+- **Text extraction** via PyMuPDF, with whitespace/line-noise cleanup
+- **Section parsing** — education, skills, projects, experience, certifications (heading-based)
+- **Skill extraction** — regex matching against a curated skill vocabulary
+- **Candidate profile & stats** — skill counts, section-presence flags
 
 </details>
 
 <details>
-<summary><strong>🎯 ATS Optimization</strong></summary>
-
-Know exactly how an Applicant Tracking System reads your resume before a recruiter ever sees it:
+<summary><strong>🎯 ATS Scoring</strong></summary>
 
 | Output | What it tells you |
 |--------|-------------------|
-| ATS Score | Overall machine-readability score (0–100) |
-| Resume Score | Human-readability & content quality |
-| Matched Skills | Skills present in both resume and JD |
-| Missing Skills | Keywords the ATS expects but can't find |
-| Keyword Match % | Exact percentage overlap with role requirements |
-| ATS Recommendations | Actionable fixes to boost the score |
+| Resume Score | Rule-based score (0–100) across skills, education, experience, projects, certifications |
+| ATS Score | Hybrid score — semantic keyword match (60%) + resume score (40%), then refined by an LLM pass |
+| Matched / Missing Skills | Semantic comparison against the target role's required-skill list, not just exact string matches |
+| Keyword Match % | Percentage of required skills found (exactly or semantically) in the resume |
+| Recommendations | Actionable, LLM-generated fixes |
 
 </details>
 
 <details>
-<summary><strong>🧠 Skill Gap Analysis</strong></summary>
+<summary><strong>🧠 Semantic Skill Gap Analysis</strong></summary>
 
-Compare your current skill-set against what the industry actually demands for your target role.
-
-**Supported roles (expanding):**
-- Machine Learning Engineer
-- Data Scientist
-- Backend Developer
-
-**Output:** missing skills list · gap summary · personalised learning recommendations
+Resume skills and role requirements are embedded with **Sentence-Transformers** (`all-MiniLM-L6-v2`) and compared with cosine similarity, so `"TensorFlow"` on a resume can correctly satisfy a requirement for `"Deep Learning"` frameworks — not just literal string matches. Supports **12 target roles** out of the box (see [Supported Roles](#-supported-roles)).
 
 </details>
 
 <details>
-<summary><strong>✨ Resume Improvement Engine</strong></summary>
+<summary><strong>✨ Resume Improvement Suggestions</strong></summary>
 
-AI-generated enhancement suggestions across every section:
-
-- Summary rewrite ideas
-- Stronger project bullet points
-- Experience phrasing improvements
-- Skill keyword additions
-- ATS-specific formatting recommendations
+A single Groq LLM call returns structured, section-by-section improvement ideas: summary rewrites, stronger project bullets, experience phrasing, skill-keyword additions, and ATS-specific formatting fixes.
 
 </details>
 
 <details>
 <summary><strong>🎤 AI Mock Interview</strong></summary>
 
-Get personalised interview questions generated from *your* resume, not a generic question bank:
-
-- **Technical questions** — based on your listed skills
-- **Conceptual questions** — core theory for your target role
-- **Project-based questions** — deep dives into *your own* projects
-- **Role-specific questions** — what top companies ask for that position
-
-**Follow-up generation** — answers a follow-up question based on your response, simulating a real back-and-forth interview.
+- **Personalised questions** generated from the *candidate's own* resume — skills, projects, experience, and target role — at Easy / Medium / Hard difficulty
+- **Live countdown timer** widget embedded in the interview page
+- **On-demand follow-up questions** — the interviewer probes deeper into a specific answer before moving on
 
 </details>
 
 <details>
-<summary><strong>📊 AI Interview Evaluation</strong></summary>
+<summary><strong>📊 Strict AI Interview Evaluation</strong></summary>
 
-Submit your answers and receive a detailed LLM-powered evaluation:
+Every answer is graded by an LLM instructed to behave like a strict FAANG interviewer (empty, evasive, or "I don't know" answers are explicitly scored 0 — no credit for effort):
 
 | Metric | Description |
 |--------|-------------|
-| Technical Score | Depth & accuracy of your answers |
-| Communication Score | Clarity, structure, confidence |
-| Per-question Scores | Granular breakdown per question |
-| Strengths | What you did well |
-| Weaknesses | Areas needing improvement |
-| Learning Roadmap | Week-by-week study plan to close gaps |
-
-</details>
-
-<details>
-<summary><strong>🛣️ Personalised Learning Roadmap</strong></summary>
-
-Generates a structured, week-by-week roadmap based on your interview performance and target role. Example:
-
-```
-Week 1 → Python fundamentals & SQL
-Week 2 → Core Machine Learning algorithms
-Week 3 → Deep Learning & model deployment
-Week 4 → End-to-end project & system design
-```
+| Technical Score | Depth & accuracy across all answers |
+| Communication Score | Clarity and structure of responses |
+| Per-question Feedback | Score, critique, and an ideal answer for every question |
+| Strengths / Weaknesses | At least two of each, generated per session |
+| Learning Roadmap | A week-by-week study plan targeting the detected gaps |
 
 </details>
 
 <details>
 <summary><strong>📑 PDF Assessment Reports</strong></summary>
 
-Every interview session can be exported as a polished PDF report containing:
+One click on the Feedback page generates a downloadable PDF (via ReportLab) combining the resume analysis, ATS breakdown, skill gap, and full interview feedback into a single report.
 
-- Interview scores (technical + communication + overall)
-- Question-by-question feedback
-- Strengths & improvement areas
-- Personalised learning roadmap
+</details>
+
+<details>
+<summary><strong>🗄️ Persistent Interview History</strong></summary>
+
+Every evaluated interview is saved to a database (SQLite locally by default, or PostgreSQL in production — see [Environment Variables](#-environment-variables)) and browsable from the History page: scores, strengths/weaknesses, roadmap, and per-question feedback for every past session.
+
+</details>
+
+<details>
+<summary><strong>⚖️ Resume Comparator</strong></summary>
+
+Upload two resume versions for the same role and get a side-by-side breakdown: resume/ATS score deltas, detected-skill differences, missing-skill lists for each version, and an LLM-generated verdict on which version to submit — plus advice on combining the best of both.
 
 </details>
 
 ---
 
-## 🗄️ Persistent Storage — Neon DB
+## 🏗️ Architecture & LangGraph Workflow
 
-PlacementGPT-AI now uses [Neon](https://neon.tech/) — a serverless, autoscaling PostgreSQL platform — to persist all interview data across sessions.
-
-### What gets stored
+PlacementGPT-AI runs as **two decoupled services**:
 
 ```
-interviews
-├── session_id          (UUID, primary key)
-├── candidate_name
-├── target_role
-├── created_at          (timestamp)
-├── technical_score
-├── communication_score
-├── overall_score
-├── questions           (JSONB)
-├── answers             (JSONB)
-├── feedback            (JSONB)
-└── learning_roadmap    (JSONB)
+┌───────────────────────┐        HTTP (BACKEND_URL)       ┌────────────────────────────┐
+│   Streamlit Frontend   │ ───────────────────────────────►│      FastAPI Backend       │
+│   (app.py + pages/)    │◄─────────────────────────────── │   (backend/api/main.py)    │
+└───────────────────────┘                                  └──────────────┬─────────────┘
+                                                                            │
+                                                        ┌───────────────────┼───────────────────┐
+                                                        │                   │                   │
+                                                 ┌──────▼──────┐    ┌───────▼───────┐    ┌───────▼───────┐
+                                                 │  LangGraph   │    │  Groq LLM API  │    │  SQL Database  │
+                                                 │ resume graph │    │ (Llama 3.3 70B)│    │ (SQLite/Postgres)│
+                                                 └──────────────┘    └───────────────┘    └───────────────┘
 ```
 
-### Why Neon?
-
-| Feature | Benefit |
-|---------|---------|
-| Serverless | No server to manage; scales to zero when idle |
-| Branching | Create instant DB branches for dev/test |
-| Postgres-compatible | Use any standard Postgres client or ORM |
-| Free tier | Generous free tier — perfect for side projects |
-
-### Setup
-
-1. Create a free project at [neon.tech](https://neon.tech/)
-2. Copy your connection string
-3. Add it to `.env` (see [Environment Variables](#-environment-variables))
-
-The schema is auto-created on first run — no migrations needed.
-
----
-
-## 📊 Resume Comparator
-
-The **Resume Comparator** is a brand-new module that lets you upload two resume versions and get a comprehensive side-by-side analysis.
-
-### How it works
+Every `/analyze-resume` request is a single invocation of a **LangGraph `StateGraph`** built around a shared `PlacementState` TypedDict:
 
 ```
-Resume V1 (PDF)  ──┐
-                    ├──► LLM Comparison Agent ──► Structured Diff Report
-Resume V2 (PDF)  ──┘
+resume_text ──► [sections] ──► [skills] ──► [verification]
+                                                  │
+                                  ┌───────────────┴───────────────┐
+                              is_valid                        not is_valid
+                                  │                                │
+                              [dispatch]                      [fallback]
+                                  │                                │
+                ┌─────────┬──────┴──────┬─────────┐                │
+                ▼         ▼             ▼         ▼                │
+           [profile]   [stats]       [ats]   [skill_gap]           │
+                └─────────┴──────┬──────┴─────────┘                │
+                                  ▼                                │
+                            [aggregator]                           │
+                                  │                                │
+                            [improvements]                         │
+                                  │                                │
+                             [questions]                           │
+                                  │                                │
+                                  ▼                                ▼
+                                 END ◄──────────────────────────────
 ```
 
-### What you get
+### Node reference
 
-- **Section-level diff** — which sections improved, degraded, or stayed the same
-- **ATS score delta** — quantified improvement in machine-readability
-- **New skills detected** — skills added in V2 that weren't in V1
-- **Removed content warnings** — flags important content dropped from V1
-- **Overall recommendation** — which version to submit and why
-- **Keyword density comparison** — side-by-side keyword analysis per section
-
-### Use cases
-
-- Before/after resume editing sessions
-- Tailoring a resume for different roles
-- A/B testing two resume formats
-
----
-
-## 🏗️ System Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Streamlit Frontend                   │
-│  Resume Upload │ Interview UI │ History │ Comparator     │
-└───────────────────────────┬─────────────────────────────┘
-                            │ HTTP (REST)
-┌───────────────────────────▼─────────────────────────────┐
-│                      FastAPI Backend                     │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │            LangGraph Agent Orchestrator          │    │
-│  │                                                  │    │
-│  │  Section Agent → Skill Agent → Profile Agent    │    │
-│  │       → ATS Agent → Skill Gap Agent             │    │
-│  │       → Improvement Agent → Question Agent      │    │
-│  │       → Evaluation Agent → Roadmap Agent        │    │
-│  └──────────────────────┬───────────────────────────┘   │
-│                         │                               │
-│  ┌──────────────────────▼───────────────────────────┐   │
-│  │          Groq API  (Llama 3.3 70B)               │   │
-│  └──────────────────────────────────────────────────┘   │
-│                                                         │
-│  ┌───────────────────┐   ┌──────────────────────────┐   │
-│  │   Resume Comparator│   │      PDF Report Gen      │   │
-│  │      Module        │   │       (ReportLab)        │   │
-│  └───────────────────┘   └──────────────────────────┘   │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-          ┌─────────────────▼──────────────────┐
-          │         Neon DB (PostgreSQL)        │
-          │  Interview History · Session Data   │
-          └─────────────────────────────────────┘
-```
-
----
-
-## 🔄 LangGraph Multi-Agent Workflow
-
-PlacementGPT-AI uses a directed LangGraph `StateGraph` with a shared `PlacementState` TypedDict. The pipeline is split into three stages: a **sequential parse stage**, a **parallel analysis stage**, and a **sequential generation stage**. A validity gate after parsing short-circuits bad uploads before any expensive LLM work begins.
-
-### Full Workflow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       STAGE 1 — PARSE                          │
-│                                                                 │
-│   Resume Text ──► [ Section Agent ] ──► [ Skill Agent ]         │
-│                                               │                 │
-└───────────────────────────────────────────────┼─────────────────┘
-                                                │
-                                    ┌───────────▼────────────┐
-                                    │   Verification Node    │
-                                    │  checks sections +     │
-                                    │  skills are non-empty  │
-                                    └───────────┬────────────┘
-                                                │
-                            ┌───────────────────┴──────────────────┐
-                            │ conditional_edges (check_validity)    │
-                            │                                       │
-                      "valid"▼                               "invalid"▼
-              ┌─────────────────────┐                 ┌──────────────────────┐
-              │   Dispatch Node     │                 │    Fallback Node      │
-              │  (fan-out trigger)  │                 │  safe zero-defaults  │
-              └──┬──────┬──────┬───┘                 └──────────┬───────────┘
-                 │      │      │      │                          │
-┌────────────────▼──────▼──────▼──────▼──────────────┐         │
-│              STAGE 2 — PARALLEL ANALYSIS            │         │
-│                                                     │         │
-│  ┌──────────────┐  ┌──────────┐  ┌──────────────┐  │         │
-│  │ Profile Agent│  │Stats Node│  │  ATS Agent   │  │         │
-│  │ (profile)    │  │ (stats)  │  │ (ats_score,  │  │         │
-│  │              │  │          │  │  resume_score│  │         │
-│  │              │  │          │  │  breakdown,  │  │         │
-│  │              │  │          │  │  ats_analysis│  │         │
-│  └──────┬───────┘  └────┬─────┘  └──────┬───────┘  │         │
-│         │               │               │           │         │
-│  ┌──────▼───────────────▼───────────────▼────────┐  │         │
-│  │              Skill Gap Agent                  │  │         │
-│  │            (skill_gap result)                 │  │         │
-│  └──────────────────────┬────────────────────────┘  │         │
-│                         │  all four write back       │         │
-│                         │  to shared PlacementState  │         │
-└─────────────────────────┼───────────────────────────┘         │
-                          │                                      │
-              ┌───────────▼───────────┐                         │
-              │    Aggregator Node    │◄────────────────────────┘
-              │  (fan-in sync point)  │
-              └───────────┬───────────┘
-                          │
-┌─────────────────────────▼────────────────────────────────────┐
-│                    STAGE 3 — GENERATE                        │
-│                                                              │
-│  [ Improvement Agent ] ──► [ Question Agent ] ──► [ END ]   │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Node Reference
-
-| Node | Type | Responsibility |
-|------|------|----------------|
-| `sections` | Sequential | Parses resume text into structured sections (education, skills, experience, projects, certifications) |
-| `skills` | Sequential | Extracts a deduplicated skill list from the skills section |
-| `verification` | Sequential | Validates that at least one meaningful field was extracted |
-| `dispatch` | Fan-out | Dummy node that triggers all four parallel branches simultaneously |
-| `fallback` | Terminal | Returns zero-value defaults when the resume is unreadable — pipeline exits safely |
-| `profile` | **Parallel** | Builds a structured candidate profile from sections + skills |
-| `stats` | **Parallel** | Generates resume statistics (skill count, section presence flags) |
-| `ats` | **Parallel** | Calculates ATS score, resume score, score breakdown, and ATS recommendations against the target role |
-| `skill_gap` | **Parallel** | Loads role skill matrix, compares to resume skills, returns missing + required skills |
-| `aggregator` | Fan-in | Dummy sync node — waits for all four parallel branches to write state before continuing |
-| `improvements` | Sequential | Generates LLM-powered resume improvement suggestions per section |
-| `questions` | Sequential | Generates personalised interview questions by difficulty level |
-
-### State Schema
-
-All nodes read from and write back to a single shared `PlacementState` TypedDict:
-
-```python
-class PlacementState(TypedDict, total=False):
-    # Inputs
-    resume_text: str
-    target_role: str
-    difficulty: str          # "Easy" | "Medium" | "Hard"
-
-    # Parse stage outputs
-    sections: dict           # {education, skills, experience, projects, certifications}
-    skills: list             # deduplicated skill tokens
-    is_valid: bool           # set by verification node
-
-    # Parallel stage outputs
-    profile: dict
-    stats: dict
-    resume_score: int
-    ats_score: int
-    score_breakdown: dict
-    ats_analysis: dict
-    skill_gap: dict
-
-    # Generation stage outputs
-    resume_improvements: dict
-    questions: list
-```
+| Node | Execution | Responsibility |
+|------|-----------|-----------------|
+| `sections` | Sequential | Splits the cleaned resume text into education / skills / projects / experience / certifications using heading-based line matching |
+| `skills` | Sequential | Extracts a deduplicated skill list from the skills section by matching against `data/skills/skills.csv` |
+| `verification` | Sequential | Flags the resume invalid if no skills, education, or experience text was parsed — guards against unreadable uploads |
+| `dispatch` / `aggregator` | Fan-out / Fan-in | No-op sync nodes: `dispatch` triggers the four parallel branches; `aggregator` waits for all four before continuing |
+| `profile` | **Parallel** | Builds a structured candidate profile (skills, total count, section-presence flags) |
+| `stats` | **Parallel** | Computes resume statistics (skill count, education/experience/certification flags) |
+| `ats` | **Parallel** | Computes `resume_score`, `ats_score`, a score breakdown, and ATS analysis — hybrid of rule-based scoring, semantic matching, and an LLM refinement pass |
+| `skill_gap` | **Parallel** | Compares resume skills to the target role's required-skill matrix via sentence-embedding cosine similarity |
+| `improvements` | Sequential | Single Groq call returning structured resume-improvement suggestions |
+| `questions` | Sequential | Single Groq call generating personalised, resume-grounded interview questions at the chosen difficulty |
+| `fallback` | Terminal | Returns safe zero-value defaults when `verification` fails, so the API never errors out on a bad upload |
 
 ### Why the parallel stage matters
 
-Before this redesign, Profile → Stats → ATS → Skill Gap ran sequentially, making 4 back-to-back LLM/compute calls. Now LangGraph fans out from the `dispatch` node and all four agents execute concurrently, writing their results into the shared state independently. The `aggregator` fan-in ensures downstream nodes only proceed once every branch has completed.
-
-**Why LangGraph?**
-- Explicit, auditable state transitions — every field change is traceable
-- Native fan-out / fan-in edges for true parallel execution
-- Conditional routing without ad-hoc if/else spaghetti
-- Shared `TypedDict` state prevents agents from stepping on each other
-- Fallback path keeps the app responsive on bad input
+Before fan-out, profile → stats → ATS → skill-gap ran as four sequential steps. `dispatch` now triggers all four simultaneously, and `aggregator` only lets the pipeline proceed once every branch has written its results back into the shared state — cutting pipeline latency without changing a single agent's logic.
 
 ---
 
@@ -399,15 +229,16 @@ Before this redesign, Profile → Stats → ATS → Skill Gap ran sequentially, 
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Streamlit |
-| **Backend** | FastAPI |
-| **AI Orchestration** | LangGraph |
-| **LLM** | Groq API · Llama 3.3 70B |
-| **Database** | Neon DB (serverless PostgreSQL) |
-| **ML** | Scikit-Learn |
-| **NLP / Parsing** | Custom regex-based resume parser |
-| **PDF Generation** | ReportLab |
-| **PDF Reading** | PyPDF2 / pdfplumber |
+| **Frontend** | Streamlit (multipage app) |
+| **Backend API** | FastAPI + Uvicorn |
+| **Orchestration** | LangGraph (`StateGraph` with fan-out/fan-in) |
+| **LLM** | Groq API — Llama 3.3 70B Versatile |
+| **Semantic Matching** | Sentence-Transformers (`all-MiniLM-L6-v2`) + scikit-learn cosine similarity |
+| **PDF Text Extraction** | PyMuPDF (`fitz`) |
+| **PDF Report Generation** | ReportLab |
+| **Database / ORM** | SQLAlchemy — SQLite by default, PostgreSQL-compatible via `DATABASE_URL` |
+| **Data Handling** | Pandas |
+| **Containerization** | Docker (backend service) |
 
 ---
 
@@ -415,41 +246,62 @@ Before this redesign, Profile → Stats → ATS → Skill Gap ran sequentially, 
 
 ```
 PlacementGPT-AI/
+├── app.py                          # Streamlit entry point / landing page
+│
+├── pages/                          # Streamlit multipage app
+│   ├── Resume_Analysis.py          # Upload & analyse a resume
+│   ├── Interview.py                # Mock interview: questions, timer, follow-ups
+│   ├── Feedback.py                 # Scores, feedback, roadmap, PDF report
+│   ├── History.py                  # Browse past interview sessions
+│   ├── Comparator.py                # Compare two resume versions
+│   └── Dashboard.py                # Session-state summary dashboard
 │
 ├── backend/
-│   ├── agents/               # Individual LangGraph agents
-│   │   ├── section_agent.py
-│   │   ├── skill_agent.py
-│   │   ├── ats_agent.py
-│   │   ├── skill_gap_agent.py
-│   │   ├── improvement_agent.py
-│   │   ├── question_agent.py
-│   │   └── evaluation_agent.py
+│   ├── agents/                     # Individual reasoning/scoring agents
+│   │   ├── resume_agent.py         # Text cleaning, sectioning, profile & stats
+│   │   ├── skill_agent.py          # Regex-based skill extraction
+│   │   ├── scoring_agent.py        # Resume score + hybrid ATS score
+│   │   ├── skill_gap_agent.py      # Semantic skill-gap analysis
+│   │   ├── resume_improvement_agent.py
+│   │   ├── question_agent.py       # Personalised question generation
+│   │   ├── followup_question_agent.py
+│   │   ├── interview_agent.py      # Strict LLM interview grading
+│   │   ├── compare_agent.py        # Two-resume LLM comparison
+│   │   └── report_agent.py         # PDF report generation
 │   │
-│   ├── api/                  # FastAPI route handlers
-│   │   └── main.py
+│   ├── api/
+│   │   └── main.py                 # FastAPI routes
 │   │
-│   ├── config/               # Settings & env loading
-│   ├── db/                   # Neon DB connection & queries
-│   │   ├── connection.py
-│   │   └── interview_store.py
+│   ├── config/
+│   │   ├── settings.py             # Env var loading
+│   │   └── role_loader.py          # Loads role → required-skills map
 │   │
-│   ├── services/             # Business logic layer
-│   ├── workflows/            # LangGraph workflow definitions
-│   └── reports/              # PDF report generation (ReportLab)
+│   ├── database/
+│   │   ├── db.py                   # Engine, session, Base
+│   │   └── models.py               # InterviewSession ORM model
+│   │
+│   ├── models/
+│   │   ├── embedding_model.py      # Singleton sentence-transformer
+│   │   └── semantic_matcher.py     # Cosine-similarity skill matcher
+│   │
+│   ├── services/
+│   │   ├── file_service.py         # Uploaded-file persistence
+│   │   ├── memory_service.py       # Interview save/fetch
+│   │   └── resume_parser.py        # PDF → text
+│   │
+│   └── workflows/
+│       └── interview_workflow.py   # LangGraph StateGraph definition
 │
-├── pages/
-│   ├── Resume_Analysis.py    # Upload & analyse resume
-│   ├── Interview.py          # Run mock interview session
-│   ├── Feedback.py           # View AI evaluation & scores
-│   ├── History.py            # 🆕 Browse past interview sessions
-│   └── Comparator.py         # 🆕 Compare two resume versions
+├── data/
+│   ├── roles/role_skills.json      # Required-skill matrix, 12 roles
+│   ├── skills/skills.csv           # Canonical skill vocabulary
+│   └── questions/questions.json    # Static seed question bank (reference data)
 │
-├── data/                     # Role skill matrices & reference data
-├── tests/                    # Unit & integration tests
-│
-├── app.py                    # Streamlit entry point
-├── .env.example              # Environment variable template
+├── tests/                          # Standalone module verification scripts
+├── Dockerfile                      # Backend container image
+├── .dockerignore
+├── .env.example
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
@@ -460,9 +312,9 @@ PlacementGPT-AI/
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.10+ (the Docker image uses 3.11)
 - A [Groq API key](https://console.groq.com/) (free tier available)
-- A [Neon DB](https://neon.tech/) project (free tier available)
+- *(Optional)* A PostgreSQL connection string (e.g. [Neon](https://neon.tech/) or [Supabase](https://supabase.com/)) if you want persistent storage beyond local SQLite
 
 ### 1. Clone the repository
 
@@ -474,13 +326,8 @@ cd PlacementGPT-AI
 ### 2. Create a virtual environment
 
 ```bash
-# Using conda (recommended)
-conda create -n placementgpt python=3.10
-conda activate placementgpt
-
-# Or using venv
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 ```
 
 ### 3. Install dependencies
@@ -489,80 +336,177 @@ source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+> `sentence-transformers` pulls in PyTorch. The first run will also download the `all-MiniLM-L6-v2` embedding model (~90 MB) automatically.
+
 ### 4. Configure environment variables
 
 ```bash
 cp .env.example .env
-# Then edit .env with your keys (see below)
+# then edit .env and add your GROQ_API_KEY
 ```
 
 ---
 
 ## 🔑 Environment Variables
 
-```env
-# ── LLM ──────────────────────────────────────────────────────
-GROQ_API_KEY=your_groq_api_key_here
-MODEL_NAME=llama-3.3-70b-versatile
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `GROQ_API_KEY` | **Yes** | — | Powers every LLM call: ATS refinement, resume improvements, question generation, follow-ups, interview grading, and resume comparison |
+| `DATABASE_URL` | No | `sqlite:///./data/placementgpt.db` | Point this at a PostgreSQL URI to persist interview history in production; omit it to use the local SQLite file |
+| `BACKEND_URL` | No (frontend only) | `http://localhost:8000` | Read by the Streamlit pages to locate the FastAPI backend — set this when the two services are deployed separately |
+| `MODEL_NAME` | No | n/a — agents currently hardcode `llama-3.3-70b-versatile` | Present in `.env.example`/`settings.py`, reserved for future configurability |
+| `OPENAI_API_KEY`, `CHROMA_DB_PATH` | No | — | Loaded in `settings.py` but not yet wired into any agent — reserved for future use |
 
-# ── Database (Neon DB) ───────────────────────────────────────
-# Get this from your Neon project dashboard → Connection Details
-DATABASE_URL=postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-```
-
-> **Tip:** Never commit `.env` to version control. The `.gitignore` already excludes it.
+> **Tip:** never commit `.env` — it's already excluded in `.gitignore`.
 
 ---
 
-## ▶️ Running the App
+## ▶️ Running the Application
 
-### Start the FastAPI backend
+The frontend and backend are two independent processes — run each in its own terminal.
+
+### 1. Start the FastAPI backend
 
 ```bash
 uvicorn backend.api.main:app --reload
 ```
 
-API available at: `http://127.0.0.1:8000`  
-Swagger docs at: `http://127.0.0.1:8000/docs`
+- API → `http://127.0.0.1:8000`
+- Interactive Swagger docs → `http://127.0.0.1:8000/docs`
+- The `interview_sessions` table is created automatically on first launch — no manual migration needed.
 
-### Start the Streamlit frontend
+### 2. Start the Streamlit frontend
 
 ```bash
 streamlit run app.py
 ```
 
-App available at: `http://localhost:8501`
+- App → `http://localhost:8501`
+
+If the backend is deployed elsewhere, point the frontend at it before launching:
+
+```bash
+export BACKEND_URL="https://your-backend-host"
+streamlit run app.py
+```
+
+---
+
+## 📡 API Reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Health check — returns `{"message": "Backend Running"}` |
+| `POST` | `/analyze-resume` | Upload a PDF (`resume`) + `target_role` + `difficulty`; runs the full LangGraph pipeline and returns sections, skills, stats, scores, skill gap, improvements, profile, and generated questions |
+| `POST` | `/compare-resumes-llm` | Takes two already-analyzed resumes (`resume_a_data`, `resume_b_data`) and returns an LLM verdict, per-resume strengths, a comparison summary, and actionable advice |
+| `POST` | `/evaluate-interview` | Grades a completed interview (question/skill/answer triples) with a strict LLM pass, persists the session, and returns full feedback |
+| `POST` | `/generate-followup` | Generates one deeper follow-up question based on a candidate's answer |
+| `GET` | `/history?limit=10` | Returns the most recent interview sessions from the database |
+
+Full interactive documentation (request/response schemas) is available at `/docs` once the backend is running.
+
+---
+
+## 🎓 Supported Roles
+
+`data/roles/role_skills.json` ships a required-skill matrix used by both the ATS scorer and the skill-gap agent, covering **12 target roles**:
+
+`Machine Learning Engineer` · `Data Scientist` · `Data Analyst` · `Backend Developer` · `Frontend Developer` · `Full Stack Developer` · `Software Engineer` · `GenAI Engineer` · `Deep Learning Engineer` · `DevOps Engineer` · `Cloud Engineer` · `AI Research Engineer`
+
+Adding a new role only requires adding a new key and skill list to that JSON file — no code changes needed.
+
+---
+
+## 🗃️ Data Assets
+
+| File | Purpose |
+|------|---------|
+| `data/skills/skills.csv` | Canonical skill vocabulary used for regex-based extraction from the resume's skills section |
+| `data/roles/role_skills.json` | Required-skill matrix for the 12 supported roles |
+| `data/questions/questions.json` | A static, skill-grouped seed question bank bundled as reference data — interview questions are generated live per resume by the question agent, so this file isn't loaded at runtime today |
+
+---
+
+## 🐳 Docker Deployment
+
+The included `Dockerfile` containerizes the **FastAPI backend only**. The Streamlit frontend is designed to be deployed separately (e.g. Streamlit Community Cloud) and pointed at the container's public URL via `BACKEND_URL`.
+
+```bash
+docker build -t placementgpt-backend .
+docker run -p 8000:8000 --env-file .env placementgpt-backend
+```
+
+Notable details baked into the image:
+
+- Installs a **CPU-only PyTorch wheel** before the rest of `requirements.txt`, avoiding multi-GB CUDA libraries that would blow past free-tier build limits
+- Respects an injected `PORT` environment variable (defaults to `8000`) — ready to drop onto platforms like [Northflank](https://northflank.com/) that assign their own port at runtime
+
+---
+
+## 🧪 Testing
+
+`tests/` contains small, standalone verification scripts for the core modules (embedding, semantic matching, skill gap, the LangGraph workflow, follow-up questions, resume improvements, and PDF report generation). They exercise a function or class against a hard-coded example and print the result, rather than asserting via `pytest`. Run any of them directly:
+
+```bash
+python -m tests.test_matcher
+python -m tests.test_langgraph
+python -m tests.test_report
+```
+
+Use these as smoke tests during development, or as a starting point for a formal `pytest` suite.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] Resume parsing & ATS analysis
-- [x] Skill gap detection
-- [x] AI mock interview & evaluation
-- [x] PDF report generation
-- [x] **Persistent interview history (Neon DB)**
-- [x] **Resume comparator**
-- [x] **Parallel agent execution (LangGraph fan-out/fan-in)**
-- [x] **Resume validity gate with safe fallback**
-- [ ] Analytics dashboard — visualise progress over time
+**Shipped**
+- [x] Resume parsing, sectioning, and hybrid ATS scoring
+- [x] Semantic skill-gap analysis across 12 target roles
+- [x] AI mock interviews with a countdown timer and on-demand follow-ups
+- [x] Strict LLM-based interview evaluation with per-question feedback and a learning roadmap
+- [x] Downloadable PDF assessment reports
+- [x] Persistent interview history (SQLite locally, PostgreSQL-ready for production)
+- [x] Two-resume LLM-powered comparator
+- [x] Parallel agent execution via LangGraph fan-out/fan-in
+- [x] Resume validity gate with safe fallback defaults
+
+**Potential next steps**
+- [ ] Formal `pytest`-based automated test suite
+- [ ] Analytics dashboard charting score trends over time
 - [ ] Voice-based mock interviews
+- [ ] Configurable LLM provider (wire up the currently unused `MODEL_NAME` / `OPENAI_API_KEY` settings)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome:
+
+1. Fork the repository
+2. Create a feature branch — `git checkout -b feature/your-feature`
+3. Commit your changes with a clear message
+4. Push and open a pull request
+
+For larger changes, please open an issue first to discuss what you'd like to change.
+
+---
+
+## 📄 License
+
+This repository does not currently include a `LICENSE` file. If you plan to accept external contributions or reuse this code elsewhere, consider adding one — [MIT](https://choosealicense.com/licenses/mit/) is a common, permissive choice for projects like this.
 
 ---
 
 ## 👨‍💻 Author
 
-**Mohit Rajput**  
-B.Tech Computer Science Engineering
-
-Passionate about Machine Learning · Deep Learning · NLP · Generative AI · MLOps · Backend Development
+**Mohit Rajput** — B.Tech, Computer Science Engineering
+Interested in Machine Learning · Deep Learning · NLP · Generative AI · MLOps · Backend Development
 
 [![GitHub](https://img.shields.io/badge/GitHub-MohitParmar78-181717?style=flat-square&logo=github)](https://github.com/MohitParmar78)
 
----
-
 <div align="center">
+<br/>
 
-If PlacementGPT-AI helped you land your dream role (or just crack a tough interview), consider giving it a ⭐ on GitHub — it means a lot!
+If PlacementGPT-AI helped you land your dream role — or just crack a tough interview — consider giving it a ⭐ on GitHub!
 
 </div>
