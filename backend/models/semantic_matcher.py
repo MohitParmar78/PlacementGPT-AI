@@ -3,12 +3,21 @@
 # Semantic Matcher (Optimized)
 # ==========================================
 
-from sklearn.metrics.pairwise import (
-    cosine_similarity
-)
+import difflib
+
+# scikit-learn currently isn't a direct requirements.txt entry - it rides
+# along as a transitive dependency of sentence-transformers. Guard it so
+# the lean (no-ML) deploy build doesn't break on import.
+try:
+    from sklearn.metrics.pairwise import (
+        cosine_similarity
+    )
+except ImportError:
+    cosine_similarity = None
 
 from backend.models.embedding_model import (
-    EmbeddingModel
+    EmbeddingModel,
+    SEMANTIC_MATCH_ENABLED
 )
 
 
@@ -78,6 +87,22 @@ class SemanticMatcher:
 
                 "missing": missing
             }
+
+        # ------------------------------------
+        # Fall back to a lightweight, dependency-free
+        # string similarity check if the ML embedding
+        # model is disabled or unavailable (e.g. on a
+        # memory-constrained deploy). Keeps the API
+        # response shape identical either way.
+        # ------------------------------------
+
+        if not SEMANTIC_MATCH_ENABLED:
+
+            return self._match_skills_fallback(
+                resume_skills,
+                target_skills,
+                threshold
+            )
 
         # ------------------------------------
         # Encode Resume Skills Once
@@ -218,4 +243,72 @@ class SemanticMatcher:
 
             "missing":
                 missing
+        }
+
+    def _match_skills_fallback(
+        self,
+        resume_skills,
+        target_skills,
+        threshold=0.75
+    ):
+        """
+        Lightweight substitute for match_skills() that uses
+        difflib string similarity instead of ML embeddings.
+        No torch / sentence-transformers required, so it's
+        safe to run on low-memory deploys.
+        """
+
+        matched = []
+        missing = []
+
+        for target_skill in target_skills:
+
+            if self.exact_match(resume_skills, target_skill):
+
+                matched.append(
+                    {
+                        "target_skill": target_skill,
+                        "matched_skill": target_skill,
+                        "similarity": 1.0
+                    }
+                )
+                continue
+
+            best_match = None
+            best_score = 0.0
+
+            for skill in resume_skills:
+
+                score = difflib.SequenceMatcher(
+                    None,
+                    target_skill.lower().strip(),
+                    skill.lower().strip()
+                ).ratio()
+
+                if score > best_score:
+                    best_score = score
+                    best_match = skill
+
+            if best_match is not None and best_score >= threshold:
+
+                matched.append(
+                    {
+                        "target_skill": target_skill,
+                        "matched_skill": best_match,
+                        "similarity": round(best_score, 3)
+                    }
+                )
+            else:
+
+                missing.append(
+                    {
+                        "target_skill": target_skill,
+                        "best_match": best_match,
+                        "similarity": round(best_score, 3)
+                    }
+                )
+
+        return {
+            "matched": matched,
+            "missing": missing
         }

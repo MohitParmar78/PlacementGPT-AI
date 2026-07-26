@@ -1,0 +1,27 @@
+# Lean requirements for deploying the FastAPI backend on memory-constrained
+# hosts (e.g. Render free/starter tiers).
+#
+# This intentionally excludes `torch` and `sentence-transformers` - together
+# they add 1-2GB+ and enough runtime RAM to OOM a 512MB instance the moment
+# the embedding model loads. With these excluded, backend/models/semantic_matcher.py
+# automatically falls back to a lightweight difflib-based similarity check
+# (see ENABLE_SEMANTIC_MATCH below) - so the app still runs, just without
+# ML-based skill matching.
+#
+# To restore full semantic matching, use requirements.txt instead (needs a
+# plan with more RAM/build minutes) and set ENABLE_SEMANTIC_MATCH=true.
+
+fastapi
+uvicorn
+python-multipart
+requests
+pydantic
+python-dotenv
+pymupdf
+groq
+reportlab
+langchain
+langchain-core
+langgraph
+sqlalchemy
+psycopg2-binary
