@@ -29,7 +29,7 @@ def generate_questions(
 ):
     """
     Generate personalized interview questions
-    using Llama 70B.
+    using openai/gpt-oss-120b.
 
     Parameters
     ----------
@@ -140,7 +140,7 @@ Format:
 
     response = client.chat.completions.create(
 
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
 
         messages=[
             {
