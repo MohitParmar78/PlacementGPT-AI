@@ -20,7 +20,11 @@ def save_interview_session(db: Session, target_role: str, feedback: dict):
     )
     
     db.add(db_session)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     db.refresh(db_session)
     return db_session
 
