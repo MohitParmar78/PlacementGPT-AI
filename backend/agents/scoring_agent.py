@@ -13,7 +13,7 @@ client = Groq(api_key=GROQ_API_KEY)
 
 def _get_llm_ats_score(sections, skills, target_role, required_skills, semantic_matches, semantic_missing):
     prompt = f"""
-You are an expert ATS (Applicant Tracking System) and technical recruiter.
+You are a supportive, candidate-friendly ATS (Applicant Tracking System) and technical recruiter.
 Evaluate the candidate's resume for the role of: {target_role}.
 
 Required Skills for the role: {json.dumps(required_skills)}
@@ -24,8 +24,21 @@ We have already performed a semantic analysis of the skills.
 Semantically Matched Skills: {json.dumps(semantic_matches)}
 Semantically Missing Skills: {json.dumps(semantic_missing)}
 
-Evaluate how well the candidate matches the role based on this semantic analysis and their contextual experience.
-Provide an ATS Score from 0 to 100. (Base it heavily on the semantic matches, but adjust based on experience context).
+Be generous when deciding whether a required skill counts as matched:
+- Treat the semantic matches as a floor, not a ceiling - you may match additional required
+  skills beyond what the semantic pass found.
+- Count a required skill as matched if the candidate has a closely related technology,
+  a broader/narrower version of it, a common alternative tool that serves the same purpose,
+  or clear hands-on evidence of it in their experience/projects text, even if the exact
+  keyword isn't in their skills list.
+- Give the candidate the benefit of the doubt on adjacent or transferable skills (e.g.
+  related frameworks in the same ecosystem, or a skill implied by a project description).
+- Only place a required skill in missing_skills if there's genuinely no reasonable evidence
+  the candidate has it or anything comparable.
+
+Evaluate how well the candidate matches the role based on this generous reading plus their
+contextual experience. Provide an ATS Score from 0 to 100, leaning toward rewarding
+demonstrated potential rather than penalizing missing exact keywords.
 Also provide refined lists of matched skills, missing skills, and recommendations.
 
 Return ONLY valid JSON in this exact format:
