@@ -59,7 +59,7 @@ def _resolve_backend():
         return "hf_api"
 
     if _SENTENCE_TRANSFORMERS_AVAILABLE:
-        return "local"
+        return "local" 
 
     return None
 

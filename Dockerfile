@@ -24,7 +24,7 @@ COPY . .
 # image; backend/models/semantic_matcher.py falls back automatically to a
 # lightweight difflib-based similarity check instead. Flip to "true" only
 # if you've switched to the full requirements.txt with torch installed.
-ENV ENABLE_SEMANTIC_MATCH=false
+ENV ENABLE_SEMANTIC_MATCH=true
 
 # Render (and platforms like Northflank) inject PORT; default to 8000 for local runs
 ENV PORT=8000
