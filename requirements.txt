@@ -16,3 +16,4 @@ langgraph
 sqlalchemy
 psycopg2-binary
 numpy
+scikit-learn
