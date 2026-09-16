@@ -53,8 +53,7 @@ Return JSON:
 
 {{
     "followup_question":
-    "..."
-}}
+    "..."}}
 """
 
     response = client.chat.completions.create(

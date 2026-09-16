@@ -267,9 +267,9 @@ Example:
 
                 overall_score = 95
 
-                result[
-                    "overall_score"
-                ] = overall_score
+            result[
+                "overall_score"
+            ] = overall_score
 
         else:
 
